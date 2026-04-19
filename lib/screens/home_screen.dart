@@ -1,30 +1,25 @@
 import 'package:flutter/material.dart';
-import '../models/cat.dart';
-import '../services/api_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/cat_bloc.dart';
+import '../bloc/cat_event.dart';
+import '../bloc/cat_state.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final ApiService apiService = ApiService();
   final TextEditingController controller = TextEditingController();
 
-  Future<Cat>? futureCat;
-
-  void fetchCat() {
+  void fetchCat(BuildContext context) {
     final code = int.tryParse(controller.text);
 
-    setState(() {
-      if (code == null) {
-        futureCat = Future.error("Please enter a valid number");
-      } else {
-        futureCat = apiService.fetchCat(code);
-      }
-    });
+    if (code == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter valid number")));
+      return;
+    }
+
+    context.read<CatBloc>().add(FetchCatEvent(code));
   }
 
   @override
@@ -46,58 +41,59 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 10),
 
-            ElevatedButton(onPressed: fetchCat, child: const Text("Get Cat")),
+            ElevatedButton(
+              onPressed: () => fetchCat(context),
+              child: const Text("Get Cat"),
+            ),
 
             const SizedBox(height: 20),
 
             Expanded(
-              child: FutureBuilder<Cat>(
-                future: futureCat,
-                builder: (context, snapshot) {
-                  if (futureCat == null) {
+              child: BlocBuilder<CatBloc, CatState>(
+                builder: (context, state) {
+                  if (state is CatInitial) {
                     return const Center(child: Text("Enter a code"));
                   }
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (state is CatLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (snapshot.hasError) {
+                  if (state is CatError) {
                     return Center(
                       child: Text(
-                        "Error: ${snapshot.error}",
+                        state.message,
                         style: const TextStyle(color: Colors.red),
                       ),
                     );
                   }
 
-                  final cat = snapshot.data!;
-                  return Column(
-                    children: [
-                      Text(
-                        "Status: ${controller.text}",
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      const SizedBox(height: 10),
-
-                      Expanded(
-                        child: Image.network(
-                          cat.imageUrl,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Text(
-                                "No image for this status code 😢",
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
+                  if (state is CatLoaded) {
+                    return Column(
+                      children: [
+                        Text(
+                          "Status: ${controller.text}",
+                          style: const TextStyle(fontSize: 18),
                         ),
-                      ),
-                    ],
-                  );
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: Image.network(
+                            state.cat.imageUrl,
+                            errorBuilder: (_, __, ___) {
+                              return const Center(
+                                child: Text(
+                                  "No image 😢",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return const SizedBox();
                 },
               ),
             ),
