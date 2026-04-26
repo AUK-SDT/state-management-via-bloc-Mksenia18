@@ -1,16 +1,67 @@
-# untitled6
+# HTTP Cat Browser
 
-A new Flutter project.
+Flutter app for browsing cat images by HTTP status code using the public
+[HTTP Cat API](https://http.cat/).  
+The project is refactored into layered architecture to keep UI, business logic,
+and data access clearly separated.
 
-## Getting Started
+## What the app does
 
-This project is a starting point for a Flutter application.
+- Loads a real cat image for an entered HTTP status code (100-599).
+- Validates status codes and handles not-found API responses.
+- Lets users save/remove favorite cats.
+- Provides a separate favorites screen to review saved items.
 
-A few resources to get you started if this is your first Flutter project:
+## New Feature Added
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This project adds a **Favorites feature** with:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- a new screen: `FavoritesScreen`
+- new business logic:
+  - toggle favorite state
+  - load favorite list
+  - determine whether current cat is favorited
+
+## API Used
+
+- **HTTP Cat**: https://http.cat/
+- Example request: `https://http.cat/404`
+
+## Project Structure
+
+Main code lives in `lib/features/http_cat/`:
+
+- `presentation/`  
+  UI widgets, BLoC, and user interaction handling.
+- `domain/`  
+  Entities, repository contracts, and use-cases (business logic).
+- `data/`  
+  Repository implementation, remote data source (API), local data source
+  (in-memory favorites), and models/DTOs.
+
+## Where Business Logic Is Located
+
+- Use-cases in `lib/features/http_cat/domain/usecases/`:
+  - `GetCatByStatusCode`
+  - `GetFavoriteCats`
+  - `ToggleFavoriteCat`
+- BLoC orchestration in
+  `lib/features/http_cat/presentation/bloc/cat_bloc.dart`
+
+## How to Run
+
+1. Install Flutter (stable channel).
+2. In project root, run:
+
+   ```bash
+   flutter pub get
+   flutter run
+   ```
+
+3. Enter an HTTP status code in the app and load the cat image.
+
+## Notes About API Keys
+
+HTTP Cat does not require an API key.  
+If you integrate a key-based API later, keep secrets outside the repository
+and add local config files (for example `.env`) to `.gitignore`.
